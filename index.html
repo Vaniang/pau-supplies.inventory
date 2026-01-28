@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplies Monitoring System</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* --- CSS STYLING --- */
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #3498db;
+            --bg: #f4f6f8;
+            --white: #ffffff;
+            --text: #333;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg); color: var(--text); }
+
+        /* Sidebar */
+        .sidebar { width: 250px; background: var(--primary); color: var(--white); display: flex; flex-direction: column; padding: 20px; }
+        .sidebar h2 { text-align: center; margin-bottom: 40px; border-bottom: 1px solid #ffffff33; padding-bottom: 10px; }
+        .nav-link { padding: 15px; cursor: pointer; border-radius: 5px; margin-bottom: 5px; transition: 0.3s; }
+        .nav-link:hover, .nav-link.active { background: var(--accent); }
+
+        /* Main Content */
+        .main { flex: 1; padding: 30px; overflow-y: auto; }
+        .section { display: none; animation: fadeIn 0.4s; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Dashboard Cards */
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: var(--white); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; }
+        .card h3 { color: #7f8c8d; font-size: 0.9rem; margin: 0; }
+        .card .number { font-size: 2.5rem; font-weight: bold; color: var(--primary); margin: 10px 0; }
+
+        /* Charts & Upload */
+        .dashboard-row { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .chart-box, .upload-box { background: var(--white); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .upload-box { text-align: center; border: 2px dashed #bdc3c7; display: flex; flex-direction: column; justify-content: center; }
+
+        /* Inventory Table */
+        table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: var(--secondary); color: var(--white); }
+        .btn-req { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1rem; cursor: pointer; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4); z-index: 10; }
+
+        /* MODAL (Requisition Slip) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .modal-overlay.open { display: flex; }
+        
+        .paper-slip { 
+            width: 210mm; height: 297mm; /* A4 Size */
+            background: white; padding: 20mm; 
+            box-sizing: border-box; 
+            position: relative; 
+            overflow-y: auto;
+            transform: scale(0.8); /* Scale down slightly to fit screen */
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+
+        /* Slip Internals */
+        .slip-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 20px; padding-bottom: 10px; }
+        .slip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .slip-input { width: 100%; border: none; border-bottom: 1px solid #999; padding: 5px; font-family: inherit; }
+        .slip-table th, .slip-table td { border: 1px solid #000; padding: 8px; }
+        
+        .modal-actions { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
+        .btn-close { background: #e74c3c; }
+        .btn-print { background: #27ae60; }
+        .btn-submit { background: #2980b9; }
+
+        /* PRINT MEDIA QUERY (Critical for printing) */
+        @media print {
+            body * { visibility: hidden; }
+            .modal-overlay { position: absolute; top: 0; left: 0; background: white; display: block !important; }
+            .paper-slip, .paper-slip * { visibility: visible; }
+            .paper-slip { transform: scale(1); position: absolute; top: 0; left: 0; width: 100%; height: auto; box-shadow: none; margin: 0; }
+            .modal-actions, .add-item-controls { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>IMS System</h2>
+        <div class="nav-link active" onclick="nav('dashboard', this)">Dashboard</div>
+        <div class="nav-link" onclick="nav('inventory', this)">Inventory List</div>
+    </div>
+
+    <div class="main">
+        
+        <div id="dashboard" class="section active">
+            <h1>Dashboard</h1>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>Total Items in Stock</h3>
+                    <div class="number" id="dash-total-items">0</div>
+                </div>
+                <div class="card">
+                    <h3>Total Requisitions</h3>
+                    <div class="number" id="dash-total-reqs">0</div>
+                </div>
+            </div>
+
+            <div class="dashboard-row">
+                <div class="chart-box">
+                    <canvas id="stockChart"></canvas>
+                </div>
+                <div class="upload-box">
+                    <h3>Upload Supplies List</h3>
+                    <p style="color:#777; font-size:0.9rem;">Supports .xlsx / .csv</p>
+                    <input type="file" id="excelUpload" onchange="handleFileUpload(this)" accept=".xlsx, .xls, .csv" />
+                    <p style="font-size:0.8rem; margin-top:10px; color: #e74c3c;">Excel Header Format: <br><b>Name, Qty, Price</b></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="inventory" class="section">
+            <h1>Inventory List</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Init Qty</th>
+                        <th>Unit Price</th>
+                        <th>Date Requested</th>
+                        <th>Items Left</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryTable">
+                    </tbody>
+            </table>
+            <button class="btn-req" onclick="openModal()">+ Request Supplies</button>
+        </div>
+
+    </div>
+
+    <div class="modal-overlay" id="reqModal">
+        
+        <div class="modal-actions">
+            <button class="btn btn-print" onclick="window.print()">Print Slip</button>
+            <button class="btn btn-submit" onclick="submitRequisition()">Submit & Deduct</button>
+            <button class="btn btn-close" onclick="closeModal()">Close</button>
+        </div>
+
+        <div class="paper-slip">
+            <div class="slip-header">
+                <h1 style="margin:0; font-size:24px;">REQUISITION SLIP</h1>
+                <p style="margin:5px 0;">Official Inventory Request Form</p>
+            </div>
+
+            <div class="slip-grid">
+                <div>
+                    <label>Requester Name:</label>
+                    <input type="text" class="slip-input" id="reqName" placeholder="Enter Name">
+                </div>
+                <div>
+                    <label>Date Requested:</label>
+                    <input type="text" class="slip-input" id="reqDate" readonly>
+                </div>
+            </div>
+
+            <div class="add-item-controls" style="background:#eee; padding:10px; margin-bottom:10px; border-radius:4px;">
+                <select id="itemSelect" style="padding:5px;">
+                    <option value="">Select Item from Inventory...</option>
+                </select>
+                <input type="number" id="itemQty" placeholder="Qty" style="width:60px; padding:5px;">
+                <button onclick="addItemToSlip()" style="padding:5px 10px; cursor:pointer;">Add</button>
+            </div>
+
+            <table class="slip-table" style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th>Item Description</th>
+                        <th>Unit Price</th>
+                        <th>Quantity Needed</th>
+                        <th>Total Cost</th>
+                    </tr>
+                </thead>
+                <tbody id="slipTableBody">
+                    </tbody>
+            </table>
+
+            <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+                <div style="text-align: center; width: 30%;">
+                    <div style="border-bottom: 1px solid #000; height: 40px;"></div>
+                    <p>Requested By</p>
+                </div>
+                <div style="text-align: center; width: 30%;">
+                    <div style="border-bottom: 1px solid #000; height: 40px;"></div>
+                    <p>Approved By</p>
+                </div>
+                <div style="text-align: center; width: 30%;">
+                    <div style="border-bottom: 1px solid #000; height: 40px;"></div>
+                    <p>Received By</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // -----------------------------------------------------
+        // 1. CONFIGURATION (YOUR KEYS ARE HERE)
+        // -----------------------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyDxPnmXxfno19bkj9VHP1Do97PDg0lp04s",
+            authDomain: "supplies-monitoring.firebaseapp.com",
+            projectId: "supplies-monitoring",
+            storageBucket: "supplies-monitoring.firebasestorage.app",
+            messagingSenderId: "524755577094",
+            appId: "1:524755577094:web:cd3c45819698c3380a1687",
+            measurementId: "G-033SS1BHK1"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Global State
+        let inventoryData = [];
+        let slipItems = [];
+
+        // -----------------------------------------------------
+        // 2. CORE FUNCTIONS
+        // -----------------------------------------------------
+
+        // Initialize on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadInventory();
+            loadStats();
+        });
+
+        // Navigation
+        function nav(id, btn) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // --- DATABASE LISTENERS (REAL-TIME) ---
+        function loadInventory() {
+            db.collection('inventory').onSnapshot(snapshot => {
+                inventoryData = [];
+                let totalStock = 0;
+                const tbody = document.getElementById('inventoryTable');
+                const select = document.getElementById('itemSelect');
+                
+                tbody.innerHTML = ''; // Clear table
+                select.innerHTML = '<option value="">Select Item...</option>'; // Clear dropdown
+
+                snapshot.forEach(doc => {
+                    const item = doc.data();
+                    item.id = doc.id;
+                    inventoryData.push(item);
+                    totalStock += item.currentQty;
+
+                    // 1. Render Table Row
+                    const dateStr = item.lastRequestDate ? new Date(item.lastRequestDate.seconds * 1000).toLocaleDateString() : '-';
+                    const row = `
+                        <tr>
+                            <td>${item.itemName}</td>
+                            <td>${item.initialQty}</td>
+                            <td>${item.unitPrice}</td>
+                            <td>${dateStr}</td>
+                            <td style="font-weight:bold; color:${item.currentQty < 10 ? 'red' : 'green'}">${item.currentQty}</td>
+                        </tr>`;
+                    tbody.innerHTML += row;
+
+                    // 2. Populate Dropdown
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.text = `${item.itemName} (Stock: ${item.currentQty})`;
+                    select.appendChild(option);
+                });
+
+                // Update Dashboard Number
+                document.getElementById('dash-total-items').innerText = totalStock;
+                // Update Chart
+                updateChart();
+            });
+        }
+
+        function loadStats() {
+            db.collection('requisitions').onSnapshot(snap => {
+                document.getElementById('dash-total-reqs').innerText = snap.size;
+            });
+        }
+
+        // --- CHART JS LOGIC ---
+        let stockChart;
+        function updateChart() {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            const labels = inventoryData.map(i => i.itemName);
+            const data = inventoryData.map(i => i.currentQty);
+
+            if(stockChart) stockChart.destroy();
+
+            stockChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Current Stock Level',
+                        data: data,
+                        backgroundColor: '#3498db'
+                    }]
+                }
+            });
+        }
+
+        // --- EXCEL UPLOAD LOGIC ---
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet);
+                
+                // Batch write to Firebase
+                const batch = db.batch();
+                let hasData = false;
+                
+                json.forEach(row => {
+                    // Try to map different casing (Name, name, NAME)
+                    const name = row.Name || row.name || row.NAME;
+                    const qty = row.Qty || row.qty || row.QTY || row.Quantity;
+                    const price = row.Price || row.price || row.PRICE || 0;
+
+                    if(name && qty) {
+                        hasData = true;
+                        const docRef = db.collection('inventory').doc();
+                        batch.set(docRef, {
+                            itemName: String(name),
+                            initialQty: Number(qty),
+                            currentQty: Number(qty),
+                            unitPrice: Number(price),
+                            lastRequestDate: null
+                        });
+                    }
+                });
+                
+                if(hasData) {
+                    batch.commit().then(() => alert('Inventory Imported Successfully!'));
+                } else {
+                    alert('Error: Could not find "Name" or "Qty" columns in Excel.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- MODAL & REQUISITION LOGIC ---
+        function openModal() {
+            document.getElementById('reqModal').classList.add('open');
+            document.getElementById('reqDate').value = new Date().toLocaleDateString(); // Auto Date
+            slipItems = [];
+            renderSlipTable();
+        }
+
+        function closeModal() {
+            document.getElementById('reqModal').classList.remove('open');
+        }
+
+        function addItemToSlip() {
+            const id = document.getElementById('itemSelect').value;
+            const qty = Number(document.getElementById('itemQty').value);
+            
+            if(!id || qty <= 0) return alert("Please select item and quantity");
+            
+            const dbItem = inventoryData.find(i => i.id === id);
+            
+            if(qty > dbItem.currentQty) return alert("Not enough stock!");
+
+            slipItems.push({ 
+                id: id, 
+                name: dbItem.itemName, 
+                price: dbItem.unitPrice, 
+                qty: qty 
+            });
+            renderSlipTable();
+        }
+
+        function renderSlipTable() {
+            const tbody = document.getElementById('slipTableBody');
+            tbody.innerHTML = '';
+            slipItems.forEach(item => {
+                const total = (item.price * item.qty).toFixed(2);
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.price}</td>
+                        <td>${item.qty}</td>
+                        <td>${total}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- SUBMIT & AUTOMATIC DECREASE LOGIC ---
+        async function submitRequisition() {
+            const name = document.getElementById('reqName').value;
+            if(!name) return alert("Enter requester name");
+            if(slipItems.length === 0) return alert("No items to request");
+
+            const batch = db.batch();
+
+            // 1. Add to Requisition History
+            const reqRef = db.collection('requisitions').doc();
+            batch.set(reqRef, {
+                requester: name,
+                date: new Date(),
+                items: slipItems
+            });
+
+            // 2. Decrement Inventory
+            slipItems.forEach(slipItem => {
+                const itemRef = db.collection('inventory').doc(slipItem.id);
+                // Find current stock from local data to calculate new stock
+                const currentStock = inventoryData.find(i => i.id === slipItem.id).currentQty;
+                batch.update(itemRef, {
+                    currentQty: currentStock - slipItem.qty,
+                    lastRequestDate: new Date()
+                });
+            });
+
+            try {
+                await batch.commit();
+                alert("Success! Inventory Updated.");
+                closeModal();
+            } catch(e) {
+                console.error(e);
+                alert("Error submitting request. Check console for details.");
+            }
+        }
+    </script>
+</body>
+</html>
