@@ -12,119 +12,113 @@
 
     <style>
         /* --- CSS STYLING --- */
-        :root {
-            --primary: #2c3e50;
-            --secondary: #34495e;
-            --accent: #3498db;
-            --bg: #f4f6f8;
-            --white: #ffffff;
-            --text: #333;
-        }
+        :root { --primary: #2c3e50; --secondary: #34495e; --accent: #3498db; --bg: #f4f6f8; --white: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg); color: #333; }
 
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg); color: var(--text); }
-
-        /* Sidebar */
+        /* Sidebar & Layout */
         .sidebar { width: 250px; background: var(--primary); color: var(--white); display: flex; flex-direction: column; padding: 20px; }
-        .sidebar h2 { text-align: center; margin-bottom: 40px; border-bottom: 1px solid #ffffff33; padding-bottom: 10px; }
+        .sidebar h2 { text-align: center; border-bottom: 1px solid #ffffff33; padding-bottom: 10px; }
         .nav-link { padding: 15px; cursor: pointer; border-radius: 5px; margin-bottom: 5px; transition: 0.3s; }
         .nav-link:hover, .nav-link.active { background: var(--accent); }
-
-        /* Main Content */
         .main { flex: 1; padding: 30px; overflow-y: auto; }
-        .section { display: none; animation: fadeIn 0.4s; }
-        .section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Dashboard Cards */
+        /* Dashboard & Tables */
         .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .card { background: var(--white); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; }
-        .card h3 { color: #7f8c8d; font-size: 0.9rem; margin: 0; }
-        .card .number { font-size: 2.5rem; font-weight: bold; color: var(--primary); margin: 10px 0; }
+        .card { background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .card .number { font-size: 2.5rem; font-weight: bold; color: var(--primary); }
+        
+        table.inventory-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        table.inventory-table th, table.inventory-table td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        table.inventory-table th { background: var(--secondary); color: white; }
+        
+        .btn-req { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; padding: 15px 30px; border-radius: 50px; border: none; font-size: 1rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 10; }
 
-        /* Charts & Upload */
-        .dashboard-row { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        .chart-box, .upload-box { background: var(--white); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .upload-box { text-align: center; border: 2px dashed #bdc3c7; display: flex; flex-direction: column; justify-content: center; }
-
-        /* Inventory Table */
-        table.inventory-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        table.inventory-table th, table.inventory-table td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-        table.inventory-table th { background: var(--secondary); color: var(--white); }
-        .date-cell { font-size: 0.85rem; color: #555; max-width: 200px; word-wrap: break-word; }
-
-        .btn-req { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1rem; cursor: pointer; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4); z-index: 10; }
-
-        /* --- MODAL (Official Requisition Slip) --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 100; }
+        /* --- MODAL STYLING (The Fixes) --- */
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.7); 
+            display: none; justify-content: center; overflow-y: auto; 
+            z-index: 2000; padding-top: 50px; padding-bottom: 50px;
+        }
         .modal-overlay.open { display: flex; }
-        
-        /* Simulating the A4 Paper */
-        .paper-slip { 
-            width: 210mm; 
-            min-height: 297mm; 
-            background: white; 
-            padding: 10mm 15mm; /* Margins based on standard form */
-            box-sizing: border-box; 
-            position: relative; 
-            overflow-y: auto;
-            transform: scale(0.85); 
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
-            font-family: 'Arial', sans-serif;
-            color: #000;
-        }
 
-        /* Official Form Styling (Matches Image) */
-        .ris-header-top { text-align: right; font-style: italic; font-size: 10px; margin-bottom: 5px; }
-        .ris-title { text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 15px; }
-        
-        .ris-info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            border-bottom: 2px solid black;
-            padding-bottom: 5px;
-            margin-bottom: 5px;
-            font-size: 12px;
-        }
-        .ris-info-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
-        .ris-label { font-weight: bold; margin-right: 5px; }
-        .ris-input { border-bottom: 1px solid #000; flex: 1; text-align: center; font-weight: bold; }
-
-        /* The Complex Grid Table */
-        table.ris-table { width: 100%; border-collapse: collapse; font-size: 11px; border: 2px solid black; }
-        table.ris-table th, table.ris-table td { border: 1px solid black; padding: 4px; text-align: center; }
-        table.ris-table th { font-weight: bold; }
-        
-        .empty-row td { height: 18px; } /* Height for blank lines */
-
-        /* Signatures Section */
-        .ris-footer { 
-            width: 100%; 
-            border: 2px solid black; 
-            border-top: none; 
+        /* FIXED BUTTONS (Always Visible) */
+        .modal-actions { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
             display: flex; 
-            font-size: 11px;
+            flex-direction: column; 
+            gap: 10px; 
+            z-index: 3000; /* Highest Priority */
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
-        .sig-col { flex: 1; border-right: 1px solid black; padding: 5px; display: flex; flex-direction: column; }
-        .sig-col:last-child { border-right: none; }
-        .sig-label { font-weight: bold; margin-bottom: 25px; }
-        .sig-name { font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid black; margin: 0 5px; }
-        .sig-title { text-align: center; font-size: 10px; margin-top: 2px; }
-        .sig-date { margin-top: 10px; }
-
-        /* Controls for adding items */
-        .add-item-controls { background: #eee; padding: 10px; margin-bottom: 10px; border-radius: 4px; font-family: sans-serif; }
-        .modal-actions { position: absolute; top: 10px; right: -150px; display: flex; flex-direction: column; gap: 10px; }
-        .btn { padding: 10px 15px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 150px;}
         .btn-close { background: #e74c3c; }
         .btn-print { background: #27ae60; }
+        .btn-excel { background: #217346; } /* Excel Green */
         .btn-submit { background: #2980b9; }
 
-        /* PRINT MEDIA QUERY */
+        /* The Paper Slip (Visual Replica of Excel) */
+        .paper-slip {
+            width: 210mm; 
+            min-height: 297mm; 
+            background: white;
+            padding: 10mm;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            font-family: 'Arial Narrow', Arial, sans-serif;
+            color: black;
+            font-size: 11px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* --- OFFICIAL RIS FORM CSS (Matching CSV) --- */
+        .ris-header-italic { text-align: right; font-style: italic; font-size: 10px; margin-bottom: 5px; font-weight: bold; }
+        .ris-title { text-align: center; font-weight: bold; font-size: 18px; margin: 10px 0 20px 0; }
+        
+        /* 8-Column Grid Layout */
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+        .info-table td { padding: 2px; vertical-align: bottom; }
+        .label { font-weight: bold; white-space: nowrap; }
+        .input-line { border-bottom: 1px solid black; text-align: center; font-weight: bold; display: block; width: 100%; min-height: 18px;}
+
+        /* The Main Table */
+        table.ris-table { width: 100%; border-collapse: collapse; border: 2px solid black; table-layout: fixed; }
+        table.ris-table th, table.ris-table td { border: 1px solid black; padding: 4px; text-align: center; vertical-align: middle; word-wrap: break-word; }
+        table.ris-table th { font-weight: bold; font-size: 11px; }
+        
+        .empty-row td { height: 20px; }
+
+        /* Footer / Signatures (Matching CSV Rows) */
+        table.footer-table { width: 100%; border-collapse: collapse; border: 2px solid black; border-top: none; table-layout: fixed; }
+        table.footer-table td { border-right: 1px solid black; padding: 5px; vertical-align: top; }
+        table.footer-table tr:first-child td { border-bottom: none; font-weight: bold; }
+        table.footer-table tr td:first-child { width: 120px; font-weight: bold; text-align: left;} /* Labels Column */
+        
+        .sig-name { text-align: center; font-weight: bold; text-transform: uppercase; margin-top: 15px;}
+        .sig-title { text-align: center; font-size: 10px; }
+
+        /* Add Item Controls (Hidden on Print) */
+        .add-item-controls {
+            background: #eee; padding: 15px; border-radius: 5px;
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 2100;
+            display: flex; gap: 10px; align-items: center;
+        }
+
+        /* --- PRINT SETTINGS --- */
         @media print {
             body * { visibility: hidden; }
-            .modal-overlay { position: absolute; top: 0; left: 0; background: white; display: block !important; padding: 0; }
+            .modal-overlay { position: absolute; top: 0; left: 0; background: white; display: block !important; padding: 0; overflow: visible; }
             .paper-slip, .paper-slip * { visibility: visible; }
-            .paper-slip { transform: scale(1); width: 100%; height: 100%; box-shadow: none; margin: 0; padding: 10mm; }
+            .paper-slip { transform: scale(1); width: 100%; margin: 0; padding: 0; position: absolute; top: 0; left: 0; box-shadow: none; }
             .modal-actions, .add-item-controls { display: none !important; }
         }
     </style>
@@ -138,91 +132,74 @@
     </div>
 
     <div class="main">
-        
         <div id="dashboard" class="section active">
             <h1>Dashboard</h1>
             <div class="cards-grid">
-                <div class="card">
-                    <h3>Total Items in Stock</h3>
-                    <div class="number" id="dash-total-items">0</div>
-                </div>
-                <div class="card">
-                    <h3>Total Requisitions</h3>
-                    <div class="number" id="dash-total-reqs">0</div>
-                </div>
+                <div class="card"><h3>Total Stock</h3><div class="number" id="dash-total-items">0</div></div>
+                <div class="card"><h3>Requisitions</h3><div class="number" id="dash-total-reqs">0</div></div>
             </div>
-            <div class="dashboard-row">
-                <div class="chart-box"><canvas id="stockChart"></canvas></div>
-                <div class="upload-box">
-                    <h3>Upload Supplies List</h3>
-                    <input type="file" id="excelUpload" onchange="handleFileUpload(this)" accept=".xlsx, .xls, .csv" />
-                    <p style="font-size:0.8rem; margin-top:10px; color: #e74c3c;">Excel Header Format: <br><b>Name, Qty, Price</b></p>
-                </div>
+            <div style="margin-bottom: 20px; padding: 20px; background: white; border-radius: 8px;">
+                <h3>Upload List (Excel)</h3>
+                <input type="file" onchange="handleFileUpload(this)" accept=".xlsx, .csv" />
+                <p style="color:red; font-size:12px;">Format: Name, Qty, Price</p>
             </div>
+            <div style="background:white; padding:20px; border-radius:8px;"><canvas id="stockChart"></canvas></div>
         </div>
 
         <div id="inventory" class="section">
             <h1>Inventory List</h1>
             <table class="inventory-table">
-                <thead>
-                    <tr><th>Item Name</th><th>Init Qty</th><th>Unit Price</th><th>Date Requested</th><th>Items Left</th></tr>
-                </thead>
+                <thead><tr><th>Item Name</th><th>Init Qty</th><th>Unit Price</th><th>History</th><th>Left</th></tr></thead>
                 <tbody id="inventoryTable"></tbody>
             </table>
             <button class="btn-req" onclick="openModal()">+ Request Supplies</button>
         </div>
-
     </div>
 
     <div class="modal-overlay" id="reqModal">
         
-        <div class="paper-slip">
-            
-            <div class="modal-actions">
-                <button class="btn btn-print" onclick="window.print()">Print Slip</button>
-                <button class="btn btn-submit" onclick="submitRequisition()">Submit</button>
-                <button class="btn btn-close" onclick="closeModal()">Close</button>
-            </div>
+        <div class="modal-actions">
+            <button class="btn btn-close" onclick="closeModal()">Close</button>
+            <button class="btn btn-print" onclick="window.print()">Print RIS</button>
+            <button class="btn btn-excel" onclick="exportToExcel()">Download Excel</button>
+            <button class="btn btn-submit" onclick="submitRequisition()">Submit & Save</button>
+        </div>
 
-            <div class="add-item-controls">
-                <b>Add Items to Slip:</b><br><br>
-                <select id="itemSelect" style="padding:5px; width: 200px;">
-                    <option value="">Select Item...</option>
-                </select>
-                <input type="number" id="itemQty" placeholder="Qty" style="width:60px; padding:5px;">
-                <button onclick="addItemToSlip()" style="padding:5px 10px; cursor:pointer;">Add</button>
-            </div>
+        <div class="add-item-controls">
+            <b>Add Item:</b>
+            <select id="itemSelect" style="padding:5px;"><option value="">Select Item...</option></select>
+            <input type="number" id="itemQty" placeholder="Qty" style="width:60px; padding:5px;">
+            <button class="btn" style="background:#27ae60; padding:5px 10px; width:auto;" onclick="addItemToSlip()">Add</button>
+        </div>
 
-            <div class="ris-header-top">Appendix 63</div>
+        <div class="paper-slip" id="printableArea">
+            <div class="ris-header-italic">Appendix 63</div>
             <div class="ris-title">REQUISITION AND ISSUE SLIP</div>
 
-            <div class="ris-info-grid">
-                <div style="padding-right: 10px;">
-                    <div class="ris-info-row">
-                        <span class="ris-label">Entity Name:</span>
-                        <span class="ris-input">DepED RO I</span>
-                    </div>
-                    <div class="ris-info-row">
-                        <span class="ris-label">Division:</span>
-                        <span class="ris-input">ORD-PUBLIC AFFAIRS UNIT</span>
-                    </div>
-                    <div class="ris-info-row">
-                        <span class="ris-label">Office:</span>
-                        <span class="ris-input"></span> </div>
-                </div>
-                <div>
-                    <div class="ris-info-row">
-                        <span class="ris-label">Fund Cluster:</span>
-                        <span class="ris-input">01</span>
-                    </div>
-                    <div class="ris-info-row">
-                        <span class="ris-label">Responsibility Center Code:</span>
-                        <span class="ris-input"></span> </div>
-                    <div class="ris-info-row">
-                        <span class="ris-label">RIS No.:</span>
-                        <span class="ris-input"></span> </div>
-                </div>
-            </div>
+            <table class="info-table">
+                <tr>
+                    <td width="10%" class="label">Entity Name :</td>
+                    <td width="40%" class="input-line">DepED RO I</td>
+                    <td width="20%"></td>
+                    <td width="10%" class="label">Fund Cluster :</td>
+                    <td width="20%" class="input-line">01</td>
+                </tr>
+                <tr>
+                    <td class="label">Division :</td>
+                    <td class="input-line">ORD-PUBLIC AFFAIRS UNIT</td>
+                    <td></td>
+                    <td class="label" colspan="2" style="font-size:10px;">Responsibility Center Code :</td>
+                </tr>
+                <tr>
+                    <td class="label">Office :</td>
+                    <td class="input-line"></td>
+                    <td></td>
+                    <td class="label">RIS No. :</td>
+                    <td class="input-line" id="risNoDisplay"></td>
+                </tr>
+            </table>
+
+            <br>
 
             <table class="ris-table">
                 <thead>
@@ -232,9 +209,9 @@
                         <th colspan="2">Issue</th>
                     </tr>
                     <tr>
-                        <th width="10%">Stock No.</th>
-                        <th width="10%">Unit</th>
-                        <th width="30%">Description</th>
+                        <th width="8%">Stock No.</th>
+                        <th width="8%">Unit</th>
+                        <th width="34%">Description</th>
                         <th width="10%">Quantity</th>
                         <th width="5%">Yes</th>
                         <th width="5%">No</th>
@@ -242,50 +219,56 @@
                         <th width="20%">Remarks</th>
                     </tr>
                 </thead>
-                <tbody id="risTableBody">
-                    </tbody>
+                <tbody id="risTableBody"></tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="8" style="text-align: left; font-weight: bold; border-top: 2px solid black;">Purpose: Office Use</td>
+                        <td colspan="8" style="text-align:left; border-top:2px solid black; font-weight:bold; padding:5px;">Purpose: Office Use</td>
                     </tr>
                 </tfoot>
             </table>
 
-            <div class="ris-footer">
-                <div class="sig-col">
-                    <span class="sig-label">Requested by:</span>
-                    <br><br><br>
-                    <div class="sig-name">JOVANIE M. MAZON</div>
-                    <div class="sig-title">Administrative Assistant I</div>
-                    <div class="sig-title">ORD-Public Affairs Unit</div>
-                    <div class="sig-date">Date: ________________</div>
-                </div>
-                <div class="sig-col">
-                    <span class="sig-label">Approved by:</span>
-                    <br><br><br>
-                    <div class="sig-name">CESAR S. BUCSIT</div>
-                    <div class="sig-title">Administrative Officer V</div>
-                    <div class="sig-title">ORD-Public Affairs Unit Caretaker</div>
-                    <div class="sig-date">Date: ________________</div>
-                </div>
-                <div class="sig-col">
-                    <span class="sig-label">Issued by:</span>
-                    <br><br><br>
-                    <div class="sig-name">&nbsp;</div> <div class="sig-title">&nbsp;</div>
-                    <div class="sig-date">Date: ________________</div>
-                </div>
-                <div class="sig-col">
-                    <span class="sig-label">Received by:</span>
-                    <br><br><br>
-                    <div class="sig-name">&nbsp;</div> <div class="sig-title">&nbsp;</div>
-                    <div class="sig-date">Date: ________________</div>
-                </div>
-            </div>
-            </div>
+            <table class="footer-table">
+                <tr>
+                    <td></td>
+                    <td>Requested by:</td>
+                    <td>Approved by:</td>
+                    <td>Issued by:</td>
+                    <td style="border-right:none;">Received by:</td>
+                </tr>
+                <tr>
+                    <td>Signature :</td>
+                    <td style="border-bottom:1px solid black;"></td>
+                    <td style="border-bottom:1px solid black;"></td>
+                    <td style="border-bottom:1px solid black;"></td>
+                    <td style="border-bottom:1px solid black; border-right:none;"></td>
+                </tr>
+                <tr>
+                    <td>Printed Name :</td>
+                    <td><div class="sig-name">JOVANIE M. MAZON</div></td>
+                    <td><div class="sig-name">CESAR S. BUCSIT</div></td>
+                    <td></td>
+                    <td style="border-right:none;"></td>
+                </tr>
+                <tr>
+                    <td>Designation :</td>
+                    <td><div class="sig-title">Administrative Assistant I</div><div class="sig-title">ORD-Public Affairs Unit</div></td>
+                    <td><div class="sig-title">Administrative Officer V</div><div class="sig-title">ORD-Public Affairs Unit Caretaker</div></td>
+                    <td></td>
+                    <td style="border-right:none;"></td>
+                </tr>
+                <tr>
+                    <td>Date :</td>
+                    <td style="border-bottom:1px solid black;"></td>
+                    <td style="border-bottom:1px solid black;"></td>
+                    <td style="border-bottom:1px solid black;"></td>
+                    <td style="border-bottom:1px solid black; border-right:none;"></td>
+                </tr>
+            </table>
+        </div>
     </div>
 
     <script>
-        // --- 1. CONFIGURATION ---
+        // CONFIGURATION
         const firebaseConfig = {
             apiKey: "AIzaSyDxPnmXxfno19bkj9VHP1Do97PDg0lp04s",
             authDomain: "supplies-monitoring.firebaseapp.com",
@@ -295,228 +278,179 @@
             appId: "1:524755577094:web:cd3c45819698c3380a1687",
             measurementId: "G-033SS1BHK1"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        let inventoryData = [];
-        let slipItems = [];
+        let inventoryData = [], slipItems = [];
 
-        window.addEventListener('DOMContentLoaded', () => {
-            loadInventory();
-            loadStats();
-        });
+        window.onload = () => { loadInventory(); loadStats(); };
 
         function nav(id, btn) {
-            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(e => e.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(e => e.classList.remove('active'));
             btn.classList.add('active');
         }
 
-        // --- DATABASE LISTENERS ---
+        // --- INVENTORY LOGIC ---
         function loadInventory() {
-            db.collection('inventory').onSnapshot(snapshot => {
+            db.collection('inventory').onSnapshot(snap => {
                 inventoryData = [];
                 let totalStock = 0;
                 const tbody = document.getElementById('inventoryTable');
                 const select = document.getElementById('itemSelect');
                 
-                tbody.innerHTML = '';
-                select.innerHTML = '<option value="">Select Item...</option>';
+                tbody.innerHTML = ''; select.innerHTML = '<option value="">Select Item...</option>';
 
-                snapshot.forEach(doc => {
-                    const item = doc.data();
-                    item.id = doc.id;
-                    inventoryData.push(item);
-                    totalStock += item.currentQty;
+                snap.forEach(doc => {
+                    const d = doc.data(); d.id = doc.id;
+                    inventoryData.push(d);
+                    totalStock += d.currentQty;
                 });
-
-                // Sort A-Z
-                inventoryData.sort((a, b) => a.itemName.localeCompare(b.itemName));
+                
+                inventoryData.sort((a,b) => a.itemName.localeCompare(b.itemName)); // A-Z Sort
 
                 inventoryData.forEach(item => {
-                    let dateDisplay = "-";
-                    if (item.requestDates && Array.isArray(item.requestDates)) {
-                        dateDisplay = item.requestDates.map(d => new Date(d).toLocaleDateString()).join(', ');
-                    }
-
-                    const row = `
-                        <tr>
-                            <td>${item.itemName}</td>
-                            <td>${item.initialQty}</td>
-                            <td>${item.unitPrice}</td>
-                            <td class="date-cell">${dateDisplay}</td>
-                            <td style="font-weight:bold; color:${item.currentQty < 10 ? 'red' : 'green'}">${item.currentQty}</td>
-                        </tr>`;
-                    tbody.innerHTML += row;
-
-                    const option = document.createElement('option');
-                    option.value = item.id;
-                    option.text = `${item.itemName} (Stock: ${item.currentQty})`;
-                    select.appendChild(option);
+                    let dates = item.requestDates ? item.requestDates.map(d=>new Date(d).toLocaleDateString()).join(', ') : '-';
+                    tbody.innerHTML += `<tr><td>${item.itemName}</td><td>${item.initialQty}</td><td>${item.unitPrice}</td><td>${dates}</td><td style="font-weight:bold;">${item.currentQty}</td></tr>`;
+                    select.innerHTML += `<option value="${item.id}">${item.itemName} (Stock: ${item.currentQty})</option>`;
                 });
-
                 document.getElementById('dash-total-items').innerText = totalStock;
                 updateChart();
             });
         }
+        
+        function loadStats() { db.collection('requisitions').onSnapshot(s => document.getElementById('dash-total-reqs').innerText = s.size); }
 
-        function loadStats() {
-            db.collection('requisitions').onSnapshot(snap => {
-                document.getElementById('dash-total-reqs').innerText = snap.size;
-            });
-        }
-
-        let stockChart;
         function updateChart() {
             const ctx = document.getElementById('stockChart').getContext('2d');
-            const chartData = inventoryData.slice(0, 15); 
-            const labels = chartData.map(i => i.itemName);
-            const data = chartData.map(i => i.currentQty);
-
-            if(stockChart) stockChart.destroy();
-
-            stockChart = new Chart(ctx, {
+            const data = inventoryData.slice(0, 15);
+            if(window.myChart) window.myChart.destroy();
+            window.myChart = new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Current Stock Level',
-                        data: data,
-                        backgroundColor: '#3498db'
-                    }]
-                }
+                data: { labels: data.map(i=>i.itemName), datasets: [{ label:'Stock', data: data.map(i=>i.currentQty), backgroundColor:'#3498db' }] }
             });
         }
 
         function handleFileUpload(input) {
-            const file = input.files[0];
             const reader = new FileReader();
             reader.onload = (e) => {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const json = XLSX.utils.sheet_to_json(sheet);
-                
+                const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                 const batch = db.batch();
-                let hasData = false;
-                
+                let count = 0;
                 json.forEach(row => {
-                    const name = row.Name || row.name || row.NAME;
-                    const qty = row.Qty || row.qty || row.QTY || row.Quantity;
-                    const price = row.Price || row.price || row.PRICE || 0;
-
-                    if(name && qty) {
-                        hasData = true;
-                        const docRef = db.collection('inventory').doc();
-                        batch.set(docRef, {
-                            itemName: String(name),
-                            initialQty: Number(qty),
-                            currentQty: Number(qty),
-                            unitPrice: Number(price),
-                            requestDates: []
+                    if(row.Name && row.Qty) {
+                        count++;
+                        batch.set(db.collection('inventory').doc(), {
+                            itemName: String(row.Name), initialQty: Number(row.Qty), currentQty: Number(row.Qty), unitPrice: Number(row.Price||0), requestDates: []
                         });
                     }
                 });
-                
-                if(hasData) {
-                    batch.commit().then(() => alert('Inventory Imported Successfully!'));
-                } else {
-                    alert('Error: Could not find "Name" or "Qty" columns.');
-                }
+                batch.commit().then(()=>alert(count + ' Items Imported!'));
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsArrayBuffer(input.files[0]);
         }
 
-        // --- RIS MODAL LOGIC ---
-        function openModal() {
-            document.getElementById('reqModal').classList.add('open');
-            slipItems = [];
-            renderSlipTable();
+        // --- FORM LOGIC ---
+        function openModal() { 
+            document.getElementById('reqModal').classList.add('open'); 
+            document.getElementById('risNoDisplay').innerText = new Date().getFullYear() + '-' + Math.floor(Math.random()*10000);
+            slipItems=[]; renderSlip(); 
         }
-
-        function closeModal() {
-            document.getElementById('reqModal').classList.remove('open');
-        }
+        function closeModal() { document.getElementById('reqModal').classList.remove('open'); }
 
         function addItemToSlip() {
             const id = document.getElementById('itemSelect').value;
             const qty = Number(document.getElementById('itemQty').value);
-            
-            if(!id || qty <= 0) return alert("Please select item and quantity");
-            
-            const dbItem = inventoryData.find(i => i.id === id);
-            
-            if(qty > dbItem.currentQty) return alert("Not enough stock!");
-
-            // Add to slip items array
-            slipItems.push({ 
-                id: id, 
-                name: dbItem.itemName, 
-                unit: "pc", // Default unit, can be customized
-                qty: qty 
-            });
-            renderSlipTable();
+            if(!id || qty<=0) return;
+            const item = inventoryData.find(i=>i.id===id);
+            if(qty > item.currentQty) return alert('Not enough stock!');
+            slipItems.push({ ...item, reqQty: qty });
+            renderSlip();
         }
 
-        function renderSlipTable() {
+        function renderSlip() {
             const tbody = document.getElementById('risTableBody');
             tbody.innerHTML = '';
-            
-            // Render selected items
-            slipItems.forEach((item, index) => {
+            // Render items
+            slipItems.forEach((item, i) => {
                 tbody.innerHTML += `
                     <tr>
-                        <td>${index + 1}</td> <td>${item.unit}</td>
-                        <td style="text-align:left;">${item.name}</td>
-                        <td>${item.qty}</td>
-                        <td></td> <td></td> <td></td> <td></td> </tr>
-                `;
+                        <td>${i+1}</td><td>pc</td><td style="text-align:left">${item.itemName}</td><td>${item.reqQty}</td><td>&#10003;</td><td></td><td>${item.reqQty}</td><td></td>
+                    </tr>`;
+            });
+            // Fill empty rows (Target 15 rows)
+            for(let i=0; i < (15 - slipItems.length); i++) {
+                tbody.innerHTML += `<tr class="empty-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+            }
+        }
+
+        // --- EXCEL EXPORT FEATURE ---
+        function exportToExcel() {
+            // Manually build the array of arrays to match the form layout
+            let data = [
+                ["", "", "", "", "", "", "Appendix 63"],
+                ["REQUISITION AND ISSUE SLIP"],
+                ["Entity Name :", "", "DepED RO I", "", "", "", "Fund Cluster :", "01"],
+                ["Division :", "ORD-PUBLIC AFFAIRS UNIT", "", "", "", "Responsibility Center Code :", ""],
+                ["Office :", "", "", "", "", "RIS No. :", document.getElementById('risNoDisplay').innerText],
+                [""],
+                ["Requisition", "", "", "", "Stock Available?", "", "Issue", ""],
+                ["Stock No.", "Unit", "Description", "Quantity", "Yes", "No", "Quantity", "Remarks"]
+            ];
+
+            // Add Items
+            slipItems.forEach((item, i) => {
+                data.push([i+1, "pc", item.itemName, item.reqQty, "Yes", "", item.reqQty, ""]);
             });
 
-            // Fill remaining space with empty rows to look like the full sheet
-            const rowsNeeded = 15 - slipItems.length;
-            for(let i=0; i<rowsNeeded; i++) {
-                tbody.innerHTML += `
-                    <tr class="empty-row">
-                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-                    </tr>
-                `;
+            // Add Empty Rows
+            for(let i=0; i < (15 - slipItems.length); i++) {
+                data.push(["", "", "", "", "", "", "", ""]);
             }
+
+            data.push(["Purpose: Office Use"]);
+            data.push(["", "Requested by:", "Approved by:", "Issued by:", "", "Received by:", ""]);
+            data.push(["Signature:", "", "", "", "", "", ""]);
+            data.push(["Printed Name:", "JOVANIE M. MAZON", "CESAR S. BUCSIT", "", "", "", ""]);
+            data.push(["Designation:", "Admin Assistant I", "Admin Officer V", "", "", "", ""]);
+            data.push(["Date:", "", "", "", "", "", ""]);
+
+            // Create Sheet
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            
+            // Merge Cells (Simple visual adjustments)
+            ws['!merges'] = [
+                { s: {r:1, c:0}, e: {r:1, c:7} }, // Title
+                { s: {r:6, c:0}, e: {r:6, c:3} }, // Requisition Header
+                { s: {r:6, c:4}, e: {r:6, c:5} }, // Stock Avail Header
+                { s: {r:6, c:6}, e: {r:6, c:7} }  // Issue Header
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "RIS");
+            XLSX.writeFile(wb, "Requisition_Issue_Slip.xlsx");
         }
 
         async function submitRequisition() {
-            if(slipItems.length === 0) return alert("No items to request");
-
+            if(!slipItems.length) return alert("No items!");
             const batch = db.batch();
-            const today = new Date().toISOString(); 
+            const today = new Date().toISOString();
+            
+            // Log Requisition
+            batch.set(db.collection('requisitions').doc(), { date: today, items: slipItems });
 
-            const reqRef = db.collection('requisitions').doc();
-            batch.set(reqRef, {
-                requester: "JOVANIE M. MAZON", // Hardcoded based on form
-                date: today,
-                items: slipItems
+            // Deduct Stock
+            slipItems.forEach(item => {
+                const ref = db.collection('inventory').doc(item.id);
+                const current = inventoryData.find(i=>i.id===item.id).currentQty;
+                batch.update(ref, { currentQty: current - item.reqQty, requestDates: firebase.firestore.FieldValue.arrayUnion(today) });
             });
 
-            slipItems.forEach(slipItem => {
-                const itemRef = db.collection('inventory').doc(slipItem.id);
-                const currentStock = inventoryData.find(i => i.id === slipItem.id).currentQty;
-                
-                batch.update(itemRef, {
-                    currentQty: currentStock - slipItem.qty,
-                    requestDates: firebase.firestore.FieldValue.arrayUnion(today)
-                });
-            });
-
-            try {
-                await batch.commit();
-                alert("Success! Inventory Updated.");
-                closeModal();
-            } catch(e) {
-                console.error(e);
-                alert("Error submitting request.");
-            }
+            await batch.commit();
+            alert("Inventory Updated!");
+            closeModal();
         }
     </script>
 </body>
