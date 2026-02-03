@@ -171,6 +171,12 @@
                 <input type="file" onchange="handleFileUpload(this)" accept=".xlsx, .csv" />
                 <p style="color:red; font-size:12px;">Format: Name, Qty, Price</p>
             </div>
+            <div style="margin-top: 30px; border-top: 1px solid #ccc; padding-top: 20px;">
+    <h3>Admin Controls</h3>
+    <button onclick="resetInventory()" style="background: #c0392b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+        ⚠ Reset All Stock to Initial Count
+    </button>
+</div>
             <div style="background:white; padding:20px; border-radius:8px;"><canvas id="stockChart"></canvas></div>
         </div>
 
@@ -359,29 +365,26 @@
             renderSlip();
         }
 
-        function renderSlip() {
-    // Render BOTH copies
+       function renderSlip() {
     ['risTableBody_1', 'risTableBody_2'].forEach(tableId => {
         const tbody = document.getElementById(tableId);
         tbody.innerHTML = '';
+        
         slipItems.forEach((item, i) => {
-            
-            // CHANGED: Logic to remove specifications (stop at the first semicolon or comma)
-            // If your data is "Air Freshener; aerosol", this keeps "Air Freshener"
-            let cleanName = item.itemName.split(';')[0].trim();
+            // CHANGED: Split by comma (,) AND semicolon (;) then take the first part
+            // "AIR FRESHENER, aerosol..." -> "AIR FRESHENER"
+            let cleanName = item.itemName.split(',')[0].split(';')[0].trim();
 
             tbody.innerHTML += `
                 <tr>
-                    <td>${i+1}</td>
+                    <td></td> 
+                    
                     <td>pc</td>
                     <td style="text-align:left">${cleanName}</td>
                     <td>${item.reqQty}</td>
                     
-                    <td></td> 
-                    <td></td>
-                    
-                    <td></td> 
-                    <td></td>
+                    <td></td><td></td>
+                    <td></td><td></td>
                 </tr>`;
         });
         
@@ -391,24 +394,31 @@
         }
     });
 }
+        
+        // Fill empty rows
+        for(let i=0; i < (10 - slipItems.length); i++) {
+            tbody.innerHTML += `<tr class="empty-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+        }
+    });
+}
 
-       function exportToExcel() {
+     function exportToExcel() {
     let data = [];
-    // Loop twice to create two forms in Excel
     for(let k=0; k<2; k++) {
         data.push(["", "", "", "", "", "", "Appendix 63"]);
         data.push(["REQUISITION AND ISSUE SLIP"]);
         data.push(["Entity Name :", "", "DepED RO I", "", "", "", "Fund Cluster :", "01"]);
         data.push(["Division :", "ORD-PAU", "", "", "", "Responsibility Center Code :", ""]);
-        // CHANGED: RIS No. left blank
         data.push(["Office :", "", "", "", "", "RIS No. :", ""]); 
         data.push(["Requisition", "", "", "", "Stock Available?", "", "Issue", ""]);
         data.push(["Stock No.", "Unit", "Description", "Quantity", "Yes", "No", "Quantity", "Remarks"]);
         
-        slipItems.forEach((item, i) => {
-            // CHANGED: Clean name and empty columns for Yes/IssueQty
-            let cleanName = item.itemName.split(';')[0].trim();
-            data.push([i+1, "pc", cleanName, item.reqQty, "", "", "", ""]);
+        slipItems.forEach((item) => {
+            // CHANGED: Clean name using comma split
+            let cleanName = item.itemName.split(',')[0].split(';')[0].trim();
+            
+            // CHANGED: First item in array is now "" (Empty Stock No)
+            data.push(["", "pc", cleanName, item.reqQty, "", "", "", ""]);
         });
 
         for(let i=0; i < (10 - slipItems.length); i++) data.push(["", "", "", "", "", "", "", ""]);
@@ -419,14 +429,13 @@
         data.push(["Printed Name:", "JOVANIE M. MAZON", "CESAR S. BUCSIT", "", "", "", ""]);
         data.push(["Designation:", "Admin Assistant I", "Admin Officer V", "", "", "", ""]);
         data.push(["Date:", "", "", "", "", "", ""]);
-        data.push(["", "", "", "", "", "", "", ""]); // Spacer between forms
+        data.push(["", "", "", "", "", "", "", ""]); 
     }
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "RIS_Double");
     XLSX.writeFile(wb, "Requisition_Issue_Slip_Double.xlsx");
 }
-
         async function submitRequisition() {
             if(!slipItems.length) return alert("No items!");
             const batch = db.batch();
@@ -441,7 +450,37 @@
             alert("Inventory Updated!");
             closeModal();
         }
+
+        async function resetInventory() {
+    // 1. Ask for confirmation to prevent accidents
+    if(!confirm("⚠ WARNING: This will reset ALL items back to their Initial Quantity.\n\nAny previous request history for these items will be cleared.\n\nAre you sure you want to proceed?")) return;
+
+    // 2. Prepare the database update
+    const batch = db.batch();
+    
+    // 3. Loop through every item currently loaded
+    inventoryData.forEach(item => {
+        const ref = db.collection('inventory').doc(item.id);
+        
+        // Reset currentQty to match initialQty
+        // Also clear the requestDates array (history)
+        batch.update(ref, { 
+            currentQty: item.initialQty,
+            requestDates: [] 
+        });
+    });
+
+    // 4. Send updates to Firebase
+    try {
+        await batch.commit();
+        alert("Success! All inventory items have been reset to their original state.");
+    } catch (error) {
+        console.error("Error resetting:", error);
+        alert("Error resetting inventory. See console for details.");
+    }
+}
     </script>
 </body>
 </html>
+
 
