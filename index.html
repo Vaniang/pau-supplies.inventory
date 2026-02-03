@@ -444,37 +444,37 @@
             closeModal();
         }
 
+       // --- NEW RESET FUNCTION (Resets Stock AND Deletes Req History) ---
         async function resetInventory() {
-    // 1. Ask for confirmation to prevent accidents
-    if(!confirm("⚠ WARNING: This will reset ALL items back to their Initial Quantity.\n\nAny previous request history for these items will be cleared.\n\nAre you sure you want to proceed?")) return;
+            if(!confirm("⚠ WARNING: This will reset ALL items back to their Initial Quantity AND DELETE all Requisition history (setting the count to 0).\n\nAre you sure you want to proceed?")) return;
+            
+            const batch = db.batch();
 
-    // 2. Prepare the database update
-    const batch = db.batch();
-    
-    // 3. Loop through every item currently loaded
-    inventoryData.forEach(item => {
-        const ref = db.collection('inventory').doc(item.id);
-        
-        // Reset currentQty to match initialQty
-        // Also clear the requestDates array (history)
-        batch.update(ref, { 
-            currentQty: item.initialQty,
-            requestDates: [] 
-        });
-    });
+            // 1. Reset Inventory Stock
+            inventoryData.forEach(item => {
+                const ref = db.collection('inventory').doc(item.id);
+                batch.update(ref, { currentQty: item.initialQty, requestDates: [] });
+            });
 
-    // 4. Send updates to Firebase
-    try {
-        await batch.commit();
-        alert("Success! All inventory items have been reset to their original state.");
-    } catch (error) {
-        console.error("Error resetting:", error);
-        alert("Error resetting inventory. See console for details.");
-    }
-}
+            // 2. Delete All Requisitions (This makes the count go to 0)
+            const reqSnapshot = await db.collection('requisitions').get();
+            reqSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+
+            // 3. Commit Changes
+            try {
+                await batch.commit();
+                alert("Success! Stocks restored and Requisition count reset to 0.");
+            } catch (error) {
+                console.error("Error resetting:", error);
+                alert("Error resetting. See console.");
+            }
+        }
     </script>
 </body>
 </html>
+
 
 
 
