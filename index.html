@@ -107,13 +107,48 @@
         }
 
         /* --- PRINT SETTINGS --- */
-        @media print {
-            body * { visibility: hidden; }
-            .modal-overlay { position: absolute; top: 0; left: 0; background: white; display: block !important; padding: 0; overflow: visible; }
-            .paper-slip, .paper-slip * { visibility: visible; }
-            .paper-slip { transform: scale(1); width: 100%; margin: 0; padding: 5mm; position: absolute; top: 0; left: 0; box-shadow: none; }
-            .modal-actions, .add-item-controls { display: none !important; }
-        }
+       /* --- PRINT SETTINGS --- */
+@media print {
+    @page { 
+        margin: 0; /* This removes the header (date/title) and footer (url) */
+    }
+    body { 
+        margin: 0; 
+        padding: 0;
+        -webkit-print-color-adjust: exact; 
+    }
+    body * { visibility: hidden; }
+    
+    .modal-overlay { 
+        position: absolute; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%; 
+        background: white; 
+        display: block !important; 
+        padding: 0; 
+        overflow: visible; 
+        z-index: 9999;
+    }
+
+    /* Target the slip specifically */
+    .paper-slip, .paper-slip * { visibility: visible; }
+    
+    .paper-slip { 
+        transform: scale(1); 
+        width: 100%; 
+        margin: 0; 
+        padding: 10mm; /* Add padding here since we removed page margins */
+        position: absolute; 
+        top: 0; 
+        left: 0; 
+        box-shadow: none; 
+    }
+    
+    /* Hide buttons and controls */
+    .modal-actions, .add-item-controls { display: none !important; }
+}
     </style>
 </head>
 <body>
@@ -303,12 +338,15 @@
         }
 
         function openModal() { 
-            document.getElementById('reqModal').classList.add('open'); 
-            const risNum = new Date().getFullYear() + '-' + Math.floor(Math.random()*10000);
-            document.getElementById('risNo_1').innerText = risNum;
-            document.getElementById('risNo_2').innerText = risNum;
-            slipItems=[]; renderSlip(); 
-        }
+    document.getElementById('reqModal').classList.add('open'); 
+    
+    // CHANGED: We now set these to empty strings instead of generating a random number
+    document.getElementById('risNo_1').innerText = '';
+    document.getElementById('risNo_2').innerText = '';
+    
+    slipItems=[]; 
+    renderSlip(); 
+}
         function closeModal() { document.getElementById('reqModal').classList.remove('open'); }
 
         function addItemToSlip() {
@@ -322,49 +360,72 @@
         }
 
         function renderSlip() {
-            // Render BOTH copies
-            ['risTableBody_1', 'risTableBody_2'].forEach(tableId => {
-                const tbody = document.getElementById(tableId);
-                tbody.innerHTML = '';
-                slipItems.forEach((item, i) => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${i+1}</td><td>pc</td><td style="text-align:left">${item.itemName}</td><td>${item.reqQty}</td><td>&#10003;</td><td></td><td>${item.reqQty}</td><td></td>
-                        </tr>`;
-                });
-                // Fill empty rows (Reduced to 10 to fit double form)
-                for(let i=0; i < (10 - slipItems.length); i++) {
-                    tbody.innerHTML += `<tr class="empty-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
-                }
-            });
-        }
+    // Render BOTH copies
+    ['risTableBody_1', 'risTableBody_2'].forEach(tableId => {
+        const tbody = document.getElementById(tableId);
+        tbody.innerHTML = '';
+        slipItems.forEach((item, i) => {
+            
+            // CHANGED: Logic to remove specifications (stop at the first semicolon or comma)
+            // If your data is "Air Freshener; aerosol", this keeps "Air Freshener"
+            let cleanName = item.itemName.split(';')[0].trim();
 
-        function exportToExcel() {
-            let data = [];
-            // Loop twice to create two forms in Excel
-            for(let k=0; k<2; k++) {
-                data.push(["", "", "", "", "", "", "Appendix 63"]);
-                data.push(["REQUISITION AND ISSUE SLIP"]);
-                data.push(["Entity Name :", "", "DepED RO I", "", "", "", "Fund Cluster :", "01"]);
-                data.push(["Division :", "ORD-PAU", "", "", "", "Responsibility Center Code :", ""]);
-                data.push(["Office :", "", "", "", "", "RIS No. :", document.getElementById('risNo_1').innerText]);
-                data.push(["Requisition", "", "", "", "Stock Available?", "", "Issue", ""]);
-                data.push(["Stock No.", "Unit", "Description", "Quantity", "Yes", "No", "Quantity", "Remarks"]);
-                slipItems.forEach((item, i) => data.push([i+1, "pc", item.itemName, item.reqQty, "Yes", "", item.reqQty, ""]));
-                for(let i=0; i < (10 - slipItems.length); i++) data.push(["", "", "", "", "", "", "", ""]);
-                data.push(["Purpose: Office Use"]);
-                data.push(["", "Requested by:", "Approved by:", "Issued by:", "", "Received by:", ""]);
-                data.push(["Signature:", "", "", "", "", "", ""]);
-                data.push(["Printed Name:", "JOVANIE M. MAZON", "CESAR S. BUCSIT", "", "", "", ""]);
-                data.push(["Designation:", "Admin Assistant I", "Admin Officer V", "", "", "", ""]);
-                data.push(["Date:", "", "", "", "", "", ""]);
-                data.push(["", "", "", "", "", "", "", ""]); // Spacer between forms
-            }
-            const ws = XLSX.utils.aoa_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "RIS_Double");
-            XLSX.writeFile(wb, "Requisition_Issue_Slip_Double.xlsx");
+            tbody.innerHTML += `
+                <tr>
+                    <td>${i+1}</td>
+                    <td>pc</td>
+                    <td style="text-align:left">${cleanName}</td>
+                    <td>${item.reqQty}</td>
+                    
+                    <td></td> 
+                    <td></td>
+                    
+                    <td></td> 
+                    <td></td>
+                </tr>`;
+        });
+        
+        // Fill empty rows
+        for(let i=0; i < (10 - slipItems.length); i++) {
+            tbody.innerHTML += `<tr class="empty-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
         }
+    });
+}
+
+       function exportToExcel() {
+    let data = [];
+    // Loop twice to create two forms in Excel
+    for(let k=0; k<2; k++) {
+        data.push(["", "", "", "", "", "", "Appendix 63"]);
+        data.push(["REQUISITION AND ISSUE SLIP"]);
+        data.push(["Entity Name :", "", "DepED RO I", "", "", "", "Fund Cluster :", "01"]);
+        data.push(["Division :", "ORD-PAU", "", "", "", "Responsibility Center Code :", ""]);
+        // CHANGED: RIS No. left blank
+        data.push(["Office :", "", "", "", "", "RIS No. :", ""]); 
+        data.push(["Requisition", "", "", "", "Stock Available?", "", "Issue", ""]);
+        data.push(["Stock No.", "Unit", "Description", "Quantity", "Yes", "No", "Quantity", "Remarks"]);
+        
+        slipItems.forEach((item, i) => {
+            // CHANGED: Clean name and empty columns for Yes/IssueQty
+            let cleanName = item.itemName.split(';')[0].trim();
+            data.push([i+1, "pc", cleanName, item.reqQty, "", "", "", ""]);
+        });
+
+        for(let i=0; i < (10 - slipItems.length); i++) data.push(["", "", "", "", "", "", "", ""]);
+        
+        data.push(["Purpose: Office Use"]);
+        data.push(["", "Requested by:", "Approved by:", "Issued by:", "", "Received by:", ""]);
+        data.push(["Signature:", "", "", "", "", "", ""]);
+        data.push(["Printed Name:", "JOVANIE M. MAZON", "CESAR S. BUCSIT", "", "", "", ""]);
+        data.push(["Designation:", "Admin Assistant I", "Admin Officer V", "", "", "", ""]);
+        data.push(["Date:", "", "", "", "", "", ""]);
+        data.push(["", "", "", "", "", "", "", ""]); // Spacer between forms
+    }
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "RIS_Double");
+    XLSX.writeFile(wb, "Requisition_Issue_Slip_Double.xlsx");
+}
 
         async function submitRequisition() {
             if(!slipItems.length) return alert("No items!");
@@ -383,3 +444,4 @@
     </script>
 </body>
 </html>
+
