@@ -263,15 +263,23 @@
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDxPnmXxfno19bkj9VHP1Do97PDg0lp04s",
-            authDomain: "supplies-monitoring.firebaseapp.com",
-            projectId: "supplies-monitoring",
-            storageBucket: "supplies-monitoring.firebasestorage.app",
-            messagingSenderId: "524755577094",
-            appId: "1:524755577094:web:cd3c45819698c3380a1687",
-            measurementId: "G-033SS1BHK1"
-        };
+        // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAFHtrimwaLvmzw8x9cWynLa-H4k_rxk8I",
+  authDomain: "inventory-monitoring-8584e.firebaseapp.com",
+  projectId: "inventory-monitoring-8584e",
+  storageBucket: "inventory-monitoring-8584e.firebasestorage.app",
+  messagingSenderId: "785574810388",
+  appId: "1:785574810388:web:0bd8ec834bcad6ec062801"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
@@ -475,6 +483,7 @@
     </script>
 </body>
 </html>
+
 
 
 
